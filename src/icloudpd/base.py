@@ -1179,7 +1179,9 @@ def core_single_run(
                                 if user_config.skip_created_after is not None
                                 else None
                             )
-                            photos_enumerator = snapshot.photos(before, after)
+                            photos_enumerator = snapshot.photos(
+                                before, after, user_config.date_order
+                            )
                             album_size = snapshot.selected_count(before, after)
                             photos_count = album_size
                             logger.info(

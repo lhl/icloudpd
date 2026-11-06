@@ -25,6 +25,11 @@ from pyicloud_ipd.version_size import AssetVersionSize, LivePhotoVersionSize
 
 
 def cache_configuration_error(config: UserConfig) -> str | None:
+    if config.date_order != "library":
+        if not config.listing_cache_directory:
+            return "--date-order requires --listing-cache-directory"
+        if config.recent is not None or config.until_found is not None:
+            return "--date-order cannot be combined with --recent or --until-found"
     if config.listing_cache_max_age < 0:
         return "Listing cache max age must be nonnegative"
     if config.refresh_listing_cache and not config.listing_cache_directory:
@@ -70,6 +75,12 @@ def add_options_for_user(parser: argparse.ArgumentParser) -> argparse.ArgumentPa
         "--cookie-directory",
         help="Directory to store cookies for authentication. Default: %(default)s",
         default="~/.pyicloud",
+    )
+    cloned.add_argument(
+        "--date-order",
+        choices=["library", "ascending", "descending"],
+        default="library",
+        help="Traverse cached assets by creation date: ascending (oldest first), descending (newest first), or original library rank. Requires listing cache for date ordering.",
     )
     cloned.add_argument(
         "--listing-cache-directory",
@@ -487,6 +498,7 @@ def map_to_config(user_ns: argparse.Namespace) -> UserConfig:
         auth_only=user_ns.auth_only,
         adp_web_access=user_ns.adp_web_access,
         cookie_directory=user_ns.cookie_directory,
+        date_order=user_ns.date_order,
         listing_cache_directory=user_ns.listing_cache_directory,
         listing_cache_max_age=user_ns.listing_cache_max_age,
         refresh_listing_cache=user_ns.refresh_listing_cache,

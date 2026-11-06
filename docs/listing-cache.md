@@ -47,6 +47,27 @@ icloudpd --username you@example.com --directory /backup/photos \
   --skip-created-after 2020-01-13
 ```
 
+## Traversal order
+
+With snapshots enabled, `--date-order ascending` traverses oldest to newest;
+`--date-order descending` traverses newest to oldest. The default `library`
+preserves Apple's original rank order. Equal dates are ordered by asset record
+ID. Missing dates are last in either chronological direction. Ordering happens
+in SQLite, not by guessing Apple's reverse-pagination semantics.
+
+Non-default date order requires a cache and rejects `--recent`/`--until-found`
+because their newest-first early-stop meaning would be misleading. It combines
+with the inclusive cached date range:
+
+```sh
+icloudpd --username you@example.com --directory /backup/photos \
+  --listing-cache-directory ~/.cache/icloudpd-listings \
+  --skip-created-after 2020-01-13 --date-order ascending
+```
+
+The first cache build still traverses the full remote listing before it can
+sort. Subsequent runs select/order cached rows without walking newer ranks.
+
 The normal non-cached path is unchanged. Existing filename, size-selection,
 timezone and destination settings must remain stable to recognize old downloads.
 This feature does not cure authentication failures or network disconnections.

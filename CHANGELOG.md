@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- feat: explicit cached creation-date traversal with `--date-order ascending|descending`; stable asset-ID ties and missing dates last
+
 - feat: seek directly to inclusive creation-date ranges in listing snapshots and report selected-row progress totals
 
 - feat: opt-in complete metadata snapshots with `--listing-cache-directory`, bounded age, explicit refresh and lazy resource URL lookup; cached snapshots cannot drive deletion/pruning

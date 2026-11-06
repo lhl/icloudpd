@@ -170,8 +170,18 @@ class ListingSnapshot:
                 os.unlink(temporary)
 
     def photos(
-        self, created_before: float | None = None, created_after: float | None = None
+        self,
+        created_before: float | None = None,
+        created_after: float | None = None,
+        date_order: str = "library",
     ) -> Iterator[PhotoAsset]:
+        ordering = {
+            "library": "a.rank",
+            "ascending": "a.created IS NULL, a.created ASC, a.id ASC",
+            "descending": "a.created IS NULL, a.created DESC, a.id ASC",
+        }
+        if date_order not in ordering:
+            raise ValueError("Unknown date order")
         clauses = []
         values = []
         if created_before is not None:
@@ -185,7 +195,8 @@ class ListingSnapshot:
         query = (
             "SELECT m.payload, a.payload FROM assets a JOIN masters m ON m.id=a.master_id"
             + where
-            + " ORDER BY a.rank"
+            + " ORDER BY "
+            + ordering[date_order]
         )
         with sqlite3.connect(f"{self.path.resolve().as_uri()}?mode=ro", uri=True) as db:
             for master, asset in db.execute(query, values):
