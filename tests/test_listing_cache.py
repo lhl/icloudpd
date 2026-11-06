@@ -114,6 +114,25 @@ def test_lazy_lookup_and_changed_resource(tmp_path):
         missing.download(album.session, next(iter(missing._resources)))
 
 
+def test_date_seek_is_inclusive_preserves_shared_assets_and_unknown_dates(tmp_path):
+    album = Album(
+        [
+            photo("new", date=3000),
+            photo("edge", date=2000),
+            photo("old", date=1000),
+            photo("unknown", date=None),
+        ]
+    )
+    snap = ListingSnapshot(tmp_path / "cache", album)
+    snap.build(4)
+    selected = list(snap.photos(created_after=2))
+    assert [p._asset_record["recordName"] for p in selected] == ["edge", "old", "unknown"]
+    assert snap.selected_count(created_after=2) == 3
+    assert [p._asset_record["recordName"] for p in snap.photos(2, 2)] == ["edge", "unknown"]
+    assert snap.selected_count(2, 2) == 2
+    assert snap.selected_count(4, 5) == 1  # Unknown dates are never silently lost.
+
+
 def test_cache_cli_options():
     _, configs = parse(
         [

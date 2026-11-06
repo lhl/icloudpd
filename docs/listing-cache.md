@@ -31,6 +31,22 @@ changes that leave the count unchanged. Those changes remain invisible until
 refresh/expiry. Do not use this mode as proof of whole-library completeness.
 Deletion and pruning options are rejected whenever caching is enabled.
 
+## Date seeking
+
+With caching enabled, `--skip-created-after` and `--skip-created-before` select
+only matching rows from the snapshot instead of fetching and checking every
+newer/older asset again. The first cache build still lists the whole album.
+Date endpoints are inclusive and interpreted with the existing timezone rules;
+assets with missing dates stay eligible for the normal filtering fallback.
+Progress totals reflect the selected rows, not the full library. The original
+(non-cached) date-filter behavior is unchanged.
+
+```sh
+icloudpd --username you@example.com --directory /backup/photos \
+  --listing-cache-directory ~/.cache/icloudpd-listings \
+  --skip-created-after 2020-01-13
+```
+
 The normal non-cached path is unchanged. Existing filename, size-selection,
 timezone and destination settings must remain stable to recognize old downloads.
 This feature does not cure authentication failures or network disconnections.

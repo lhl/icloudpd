@@ -169,12 +169,42 @@ class ListingSnapshot:
             if os.path.exists(temporary):
                 os.unlink(temporary)
 
-    def photos(self) -> Iterator[PhotoAsset]:
+    def photos(
+        self, created_before: float | None = None, created_after: float | None = None
+    ) -> Iterator[PhotoAsset]:
+        clauses = []
+        values = []
+        if created_before is not None:
+            clauses.append("(a.created IS NULL OR a.created >= ?)")
+            values.append(created_before)
+        if created_after is not None:
+            clauses.append("(a.created IS NULL OR a.created <= ?)")
+            values.append(created_after)
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
+        # Missing dates stay eligible for the normal filter/fallback behavior.
+        query = (
+            "SELECT m.payload, a.payload FROM assets a JOIN masters m ON m.id=a.master_id"
+            + where
+            + " ORDER BY a.rank"
+        )
         with sqlite3.connect(f"{self.path.resolve().as_uri()}?mode=ro", uri=True) as db:
-            for master, asset in db.execute(
-                "SELECT m.payload, a.payload FROM assets a JOIN masters m ON m.id=a.master_id ORDER BY a.rank"
-            ):
+            for master, asset in db.execute(query, values):
                 yield SnapshotPhoto(json.loads(master), json.loads(asset), self.album)
+
+    def selected_count(
+        self, created_before: float | None = None, created_after: float | None = None
+    ) -> int:
+        clauses = []
+        values = []
+        if created_before is not None:
+            clauses.append("(created IS NULL OR created >= ?)")
+            values.append(created_before)
+        if created_after is not None:
+            clauses.append("(created IS NULL OR created <= ?)")
+            values.append(created_after)
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
+        with sqlite3.connect(f"{self.path.resolve().as_uri()}?mode=ro", uri=True) as db:
+            return int(db.execute("SELECT count(*) FROM assets" + where, values).fetchone()[0])
 
 
 def prepare_snapshot(

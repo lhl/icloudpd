@@ -1160,7 +1160,7 @@ def core_single_run(
                         if user_config.listing_cache_directory:
                             from icloudpd.listing_cache import prepare_snapshot
 
-                            photos_enumerator = prepare_snapshot(
+                            snapshot = prepare_snapshot(
                                 user_config.listing_cache_directory,
                                 user_config.username,
                                 global_config.domain,
@@ -1168,7 +1168,23 @@ def core_single_run(
                                 album_size,
                                 user_config.listing_cache_max_age,
                                 user_config.refresh_listing_cache,
-                            ).photos()
+                            )
+                            before = (
+                                offset_to_datetime(user_config.skip_created_before).timestamp()
+                                if user_config.skip_created_before is not None
+                                else None
+                            )
+                            after = (
+                                offset_to_datetime(user_config.skip_created_after).timestamp()
+                                if user_config.skip_created_after is not None
+                                else None
+                            )
+                            photos_enumerator = snapshot.photos(before, after)
+                            album_size = snapshot.selected_count(before, after)
+                            photos_count = album_size
+                            logger.info(
+                                "Selected %d cached assets for the requested dates", album_size
+                            )
 
                         # Optional: Only download the x most recent photos.
                         if user_config.recent is not None:

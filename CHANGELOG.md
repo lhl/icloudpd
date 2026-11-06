@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- feat: seek directly to inclusive creation-date ranges in listing snapshots and report selected-row progress totals
+
 - feat: opt-in complete metadata snapshots with `--listing-cache-directory`, bounded age, explicit refresh and lazy resource URL lookup; cached snapshots cannot drive deletion/pruning
 
 ## 1.33.0 (2026-11-03)
