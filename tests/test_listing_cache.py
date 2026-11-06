@@ -138,7 +138,7 @@ def test_cache_progress_and_forced_refresh(tmp_path, caplog):
     with caplog.at_level("INFO"):
         snapshot = prepare_snapshot(str(tmp_path), "user", "com", album, 1000, 3600, False)
     assert "Cached metadata for 1000 of 1000" in caplog.text
-    assert snapshot.selected_count() == 1000
+    assert len(list(snapshot.photos())) == 1000
     album.items = []
     with pytest.raises(ValueError, match="Incomplete"):
         prepare_snapshot(str(tmp_path), "user", "com", album, 1000, 3600, True)
