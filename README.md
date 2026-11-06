@@ -49,6 +49,9 @@ Some changes are added to the experimental mode before they graduate into the ma
 
 ## Usage
 
+For opt-in persistent metadata snapshots and their freshness limits, see
+[Listing metadata snapshots](docs/listing-cache.md).
+
 To keep your iCloud photo collection synchronized to your local system:
 
 ```

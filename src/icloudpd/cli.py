@@ -24,6 +24,21 @@ from pyicloud_ipd.raw_policy import RawTreatmentPolicy
 from pyicloud_ipd.version_size import AssetVersionSize, LivePhotoVersionSize
 
 
+def cache_configuration_error(config: UserConfig) -> str | None:
+    if config.listing_cache_max_age < 0:
+        return "Listing cache max age must be nonnegative"
+    if config.refresh_listing_cache and not config.listing_cache_directory:
+        return "--refresh-listing-cache requires --listing-cache-directory"
+    if config.listing_cache_directory and (
+        config.auto_delete
+        or config.delete_after_download
+        or config.keep_icloud_recent_days is not None
+        or config.prune_orphans
+    ):
+        return "Listing cache cannot be combined with deletion or pruning options"
+    return None
+
+
 def map_align_raw_to_enum(align_raw_str: str) -> RawTreatmentPolicy:
     """Map user-friendly CLI strings to RawTreatmentPolicy enum values."""
     mapping = {
@@ -55,6 +70,22 @@ def add_options_for_user(parser: argparse.ArgumentParser) -> argparse.ArgumentPa
         "--cookie-directory",
         help="Directory to store cookies for authentication. Default: %(default)s",
         default="~/.pyicloud",
+    )
+    cloned.add_argument(
+        "--listing-cache-directory",
+        default=None,
+        help="Opt-in private metadata snapshot directory; first use lists the full album. Not a media cache.",
+    )
+    cloned.add_argument(
+        "--listing-cache-max-age",
+        type=int,
+        default=86400,
+        help="Reuse listing snapshots for this many seconds when asset count matches (default: 86400). Same-count edits require refresh.",
+    )
+    cloned.add_argument(
+        "--refresh-listing-cache",
+        action="store_true",
+        help="Rebuild metadata snapshots instead of reusing them.",
     )
     cloned.add_argument(
         "--size",
@@ -456,6 +487,9 @@ def map_to_config(user_ns: argparse.Namespace) -> UserConfig:
         auth_only=user_ns.auth_only,
         adp_web_access=user_ns.adp_web_access,
         cookie_directory=user_ns.cookie_directory,
+        listing_cache_directory=user_ns.listing_cache_directory,
+        listing_cache_max_age=user_ns.listing_cache_max_age,
+        refresh_listing_cache=user_ns.refresh_listing_cache,
         sizes=list(
             map_(AssetVersionSize, foundation.unique_sequence(user_ns.sizes or ["original"]))
         ),
@@ -600,6 +634,14 @@ def cli() -> int:
         ]:
             print(
                 "--auth-only, --directory, --list-libraries, or --list-albums are required for each configuration"
+            )
+            return 2
+
+        elif any(cache_configuration_error(user_ns) for user_ns in user_nses):
+            print(
+                next(
+                    error for user_ns in user_nses if (error := cache_configuration_error(user_ns))
+                )
             )
             return 2
 

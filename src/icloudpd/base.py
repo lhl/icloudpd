@@ -1157,6 +1157,18 @@ def core_single_run(
                     photos_count: int | None = sum_(album_sizes)
                     for photo_album, album_size in zip(albums, album_sizes, strict=True):
                         photos_enumerator: Iterable[PhotoAsset] = photo_album
+                        if user_config.listing_cache_directory:
+                            from icloudpd.listing_cache import prepare_snapshot
+
+                            photos_enumerator = prepare_snapshot(
+                                user_config.listing_cache_directory,
+                                user_config.username,
+                                global_config.domain,
+                                photo_album,
+                                album_size,
+                                user_config.listing_cache_max_age,
+                                user_config.refresh_listing_cache,
+                            ).photos()
 
                         # Optional: Only download the x most recent photos.
                         if user_config.recent is not None:
