@@ -61,6 +61,25 @@ class IncompleteListingTestCase(TestCase):
         )
         self.assertNotIn("have been downloaded", output)
 
+    def test_date_filtered_cache_cli_does_not_report_incomplete_listing(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as cache:
+            exit_code, output = self.run_shared_library(
+                inspect.stack()[0][3],
+                [
+                    "--listing-cache-directory",
+                    cache,
+                    "--skip-created-after",
+                    "1900-01-01",
+                    "--date-order",
+                    "ascending",
+                ],
+            )
+        self.assertEqual(0, exit_code)
+        self.assertIn("Selected 0 cached assets", output)
+        self.assertNotIn("iCloud listed only", output)
+
     def test_recent_lists_fewer_on_purpose(self) -> None:
         with mock.patch.object(PhotoAlbum, "__len__", return_value=3):
             exit_code, output = self.run_shared_library(inspect.stack()[0][3], ["--recent", "1"])
