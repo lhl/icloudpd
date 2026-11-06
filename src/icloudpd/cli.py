@@ -652,7 +652,7 @@ def cli() -> int:
         elif any(cache_configuration_error(user_ns) for user_ns in user_nses):
             print(
                 next(
-                    error for user_ns in user_nses if (error := cache_configuration_error(user_ns))
+                    message for user_ns in user_nses if (message := cache_configuration_error(user_ns))
                 )
             )
             return 2
