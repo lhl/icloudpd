@@ -133,6 +133,18 @@ def test_date_seek_is_inclusive_preserves_shared_assets_and_unknown_dates(tmp_pa
     assert snap.selected_count(4, 5) == 1  # Unknown dates are never silently lost.
 
 
+def test_cache_progress_and_forced_refresh(tmp_path, caplog):
+    album = Album([photo(str(i)) for i in range(1000)])
+    with caplog.at_level("INFO"):
+        snapshot = prepare_snapshot(str(tmp_path), "user", "com", album, 1000, 3600, False)
+    assert "Cached metadata for 1000 of 1000" in caplog.text
+    assert snapshot.selected_count() == 1000
+    album.items = []
+    with pytest.raises(ValueError, match="Incomplete"):
+        prepare_snapshot(str(tmp_path), "user", "com", album, 1000, 3600, True)
+    assert snapshot.valid(1000, 3600)
+
+
 def test_cache_cli_options():
     _, configs = parse(
         [
