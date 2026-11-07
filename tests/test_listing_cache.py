@@ -205,6 +205,9 @@ def test_cache_rejects_destructive_options(option):
 
 def test_cache_configuration_validation():
     _, configs = parse(["--username", "test", "--refresh-listing-cache"])
+    assert configs[0].listing_cache_directory is not None
+    assert cache_configuration_error(configs[0]) is None
+    configs[0].listing_cache_directory = None
     assert cache_configuration_error(configs[0])
     configs[0].refresh_listing_cache = False
     configs[0].listing_cache_max_age = -1

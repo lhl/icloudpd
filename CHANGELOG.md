@@ -2,8 +2,8 @@
 
 ## Unreleased
 
+- fix: `--refresh` and explicit `--cache-refresh full|reuse` enable the native listing cache without requiring a separate directory flag
 - feat: explicit cached creation-date traversal with `--date-order ascending|descending`; stable asset-ID ties and missing dates last
-
 - feat: seek directly to inclusive creation-date ranges in listing snapshots and report selected-row progress totals
 - feat: enable listing caching with `--cache` at native Linux/XDG, macOS and Windows user cache paths; explicit cache directories remain supported
 
