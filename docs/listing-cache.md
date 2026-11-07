@@ -109,7 +109,7 @@ Progress totals reflect the selected rows, not the full library. The original
 
 ```sh
 icloudpd --username you@example.com --directory /backup/photos \
-  --listing-cache-directory ~/.cache/icloudpd-listings \
+  --cache \
   --skip-created-after 2020-01-13
 ```
 
@@ -128,7 +128,7 @@ with the inclusive cached date range:
 
 ```sh
 icloudpd --username you@example.com --directory /backup/photos \
-  --listing-cache-directory ~/.cache/icloudpd-listings \
+  --cache \
   --skip-created-after 2020-01-13 --date-order ascending
 ```
 

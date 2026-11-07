@@ -9,7 +9,8 @@ feature can be reviewed against its dependency:
 | --- | --- | --- |
 | `feature/listing-cache` | `master` | Complete, private metadata snapshots and lazy resource lookups |
 | `feature/cache-change-sync` | `feature/listing-cache` | Transactional change-token reconciliation and refresh controls |
-| `feature/cache-date-seek` | `feature/cache-change-sync` | Direct date-range selection and selected progress totals |
+| `feature/native-cache-paths` | `feature/cache-change-sync` | Native Linux/XDG, macOS and Windows cache locations with `--cache` |
+| `feature/cache-date-seek` | `feature/native-cache-paths` | Direct date-range selection and selected progress totals |
 | `feature/cached-date-order` | `feature/cache-date-seek` | Stable ascending/descending creation-date traversal |
 | `dev` | Integration branch | All three features and development notes |
 
@@ -55,14 +56,20 @@ env TZ=UTC /home/lhl/.local/bin/icloudpd-dev \
   --live-photo-size original \
   --live-photo-mov-filename-policy original \
   --log-level info \
-  --cache-directory "$HOME/.cache/icloudpd-listings" \
+  --cache \
   --cache-refresh auto \
   --skip-created-after '2020-01-13' \
   --date-order descending \
   --directory '/run/media/lhl/Extreme SSD/icloud'
 ```
 
-Replace the account placeholder. The cutoff includes overlap with the last
+Replace the account placeholder. `--cache` uses the native user cache location:
+Linux `$XDG_CACHE_HOME/icloudpd/listings` (fallback `~/.cache/icloudpd/listings`),
+macOS `~/Library/Caches/icloudpd/listings`, Windows
+`%LOCALAPPDATA%\\icloudpd\\Cache\\listings` (fallback under `AppData\\Local`).
+To reuse an existing cache in the previous example location, keep passing
+`--cache-directory "$HOME/.cache/icloudpd-listings"`; nothing is moved automatically.
+The cutoff includes overlap with the last
 known completed date. Existing files are checked under the original match
 policy. Ascending order is also available by changing `--date-order` to
 `ascending`; it starts at the oldest selected asset rather than near the last
