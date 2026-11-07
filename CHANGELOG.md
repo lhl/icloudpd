@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- fix: `--refresh` and explicit `--cache-refresh full|reuse` enable the native listing cache without requiring a separate directory flag
 - feat: seek directly to inclusive creation-date ranges in listing snapshots and report selected-row progress totals
 - feat: enable listing caching with `--cache` at native Linux/XDG, macOS and Windows user cache paths; explicit cache directories remain supported
 
