@@ -3,8 +3,10 @@
 `--cache` enables a private SQLite metadata cache in the native user cache
 location. `--cache-directory DIRECTORY` (alias `--listing-cache-directory`)
 enables caching at an explicit location instead. Metadata is scoped separately
-for each account/domain/library/album query. Caching remains disabled when
-neither option is supplied.
+for each account/domain/library/album query. `--refresh` (including its legacy
+spelling) and explicit `--cache-refresh full|reuse` also enable the native cache
+when no directory is supplied. Otherwise caching remains disabled without
+`--cache` or a directory option.
 The default refresh policy checks Apple's change token on **every run**, not
 just newer creation dates or matching asset counts. Imported old photos and
 same-count edits are therefore eligible for reconciliation.
@@ -44,8 +46,9 @@ destinations are unchanged; this option controls listing metadata only.
 | `--cache-refresh reuse` | Explicitly skip change checks, requiring matching count and an unexpired cache; warns about stale metadata. |
 | `--listing-cache-max-age SECONDS` | Force full reconciliation after this age (default 604800, seven days); 0 forces a full build every run. Auto still checks tokens before this age. |
 
-A refresh mode other than `auto` requires `--cache` or a cache directory. `--refresh` and
-`reuse` cannot be combined. Authentication and count checks still contact Apple;
+Explicit `--cache-refresh full|reuse` uses the native cache directory when none
+is supplied, just like `--refresh`. `--refresh` and `reuse` cannot be combined.
+Authentication and count checks still contact Apple;
 `reuse` is not an offline mode. Do not choose `reuse` for correctness-preserving
 normal synchronization.
 
