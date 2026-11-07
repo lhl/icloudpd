@@ -1,35 +1,79 @@
-# Listing metadata snapshots
+# Listing metadata cache
 
-`--listing-cache-directory DIRECTORY` opts into a private SQLite snapshot for
-each account/domain/library/album query. The first run lists the entire album
-before downloading media. A snapshot is published atomically only if the yielded
-asset count matches Apple's count and each CPLAsset record ID is unique. Shared
-masters remain separate assets. An interrupted or incomplete build does not
-replace a previous complete snapshot.
-
-Snapshots contain private filenames, dates and metadata. Database files are
-created with mode 0600; choose a private directory outside any media/Git tree.
-Signed media URLs are stripped from disk. When a missing local file needs a
-download, icloudpd looks up its current master/asset resource URL. If its size or
-checksum changed, the download stops and asks for a cache refresh instead of
-writing a newer resource under an older snapshot's path.
+`--cache-directory DIRECTORY` (alias `--listing-cache-directory`) opts into a
+private SQLite metadata cache for each account/domain/library/album query.
+The default refresh policy checks Apple's change token on **every run**, not
+just newer creation dates or matching asset counts. Imported old photos and
+same-count edits are therefore eligible for reconciliation.
 
 ```sh
 icloudpd --username you@example.com --directory /backup/photos \
-  --listing-cache-directory ~/.cache/icloudpd-listings
+  --cache-directory ~/.cache/icloudpd-listings
 ```
 
-Snapshots are reused only while their asset count matches and age is less than
-`--listing-cache-max-age SECONDS` (default 86400). Use
-`--refresh-listing-cache` to force a complete rebuild; max age 0 also forces
-rebuilding. Account authentication and count checks still require iCloud access.
-An empty library is a valid snapshot.
+## Refresh controls
 
-**This is a snapshot, not change-token synchronization.** A matching count does
-not detect edits, deletions plus additions, date changes or album membership
-changes that leave the count unchanged. Those changes remain invisible until
-refresh/expiry. Do not use this mode as proof of whole-library completeness.
-Deletion and pruning options are rejected whenever caching is enabled.
+| Option | Behavior |
+| --- | --- |
+| `--cache-refresh auto` | Default. Apply changes since the last committed token; rebuild if needed. |
+| `--cache-refresh full` | Enumerate the whole album and replace its metadata cache. |
+| `--refresh` | Shortcut for a full metadata rebuild; does not force media re-downloads. |
+| `--refresh-listing-cache` | Backward-compatible spelling of `--refresh`. |
+| `--cache-refresh reuse` | Explicitly skip change checks, requiring matching count and an unexpired cache; warns about stale metadata. |
+| `--listing-cache-max-age SECONDS` | Force full reconciliation after this age (default 604800, seven days); 0 forces a full build every run. Auto still checks tokens before this age. |
+
+A refresh mode other than `auto` requires a cache directory. `--refresh` and
+`reuse` cannot be combined. Authentication and count checks still contact Apple;
+`reuse` is not an offline mode. Do not choose `reuse` for correctness-preserving
+normal synchronization.
+
+## Initial build and updates
+
+The first run enumerates the entire album before downloading media. It captures
+a change token **before** scanning and drains changes afterward. If relevant
+mutations occurred during enumeration, the mixed snapshot is discarded and the
+scan is retried once. Continued mutation fails with the previous cache intact;
+wait for the library to settle and retry. An incomplete or duplicate-asset
+listing is never published as complete.
+
+For unfiltered **All Photos**, incremental updates use asset record IDs, keeping
+multiple assets that share one master separate. Changed records are looked up
+in full rather than blindly merging partial fields. Additions, date/metadata
+edits, hidden/deleted transitions and updated master resources are reconciled.
+A deleted asset is removed from active metadata, **not from downloaded files**.
+Unknown/ambiguous deletions, unavailable records, expired tokens, or mismatched
+post-update asset counts trigger a full rebuild. Network/authentication failures
+stop the run instead of silently using stale data.
+
+Filtered smart albums and user albums reuse unchanged listings but rebuild on
+relevant zone mutations: the zone-wide feed alone does not prove current album
+membership. This is deliberately conservative. All Photos incremental ordering
+is re-established as creation date descending with asset-ID ties after relevant
+changes; equal-date server-rank ordering is not guaranteed. No changes are made
+to the normal non-cached path.
+
+All feed pages, changed metadata and the final token are committed in one SQLite
+transaction. Failed lookups, interruptions or page errors roll back the whole
+update. Full builds are published with an atomic file replacement. Do not run
+multiple writers to the same cache; a busy database fails rather than silently
+skipping an update. Old snapshot-format files are left untouched; the new format
+uses a different scoped filename and requires a one-time full build.
+
+## Privacy and download safety
+
+Caches contain private filenames, dates, metadata and opaque change tokens.
+Files are created with mode 0600; use a private directory outside Git/media
+archives. Signed media URLs are stripped before storage. When a missing local
+file needs downloading, the current resource URL is looked up. Changed resource
+size/checksum stops the download rather than using an old path blindly; rerun
+auto refresh or force a full refresh if needed.
+
+This cache does not prove whole-library completeness or fix Apple network/
+authentication failures. Deletion and pruning flags remain prohibited with
+caching. Keep destination, timezone, filenames and requested sizes stable to
+recognize existing downloads. Metadata refresh does not overwrite files already
+considered present by the selected filename policy; edited content preservation
+is a separate archive policy.
 
 ## Date seeking
 
@@ -47,6 +91,3 @@ icloudpd --username you@example.com --directory /backup/photos \
   --skip-created-after 2020-01-13
 ```
 
-The normal non-cached path is unchanged. Existing filename, size-selection,
-timezone and destination settings must remain stable to recognize old downloads.
-This feature does not cure authentication failures or network disconnections.

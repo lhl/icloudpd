@@ -1168,6 +1168,7 @@ def core_single_run(
                                 album_size,
                                 user_config.listing_cache_max_age,
                                 user_config.refresh_listing_cache,
+                                user_config.cache_refresh,
                             )
                             before = (
                                 offset_to_datetime(user_config.skip_created_before).timestamp()
