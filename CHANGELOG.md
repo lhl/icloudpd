@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix: `--refresh` and explicit `--cache-refresh full|reuse` enable the native listing cache without requiring a separate directory flag
+
 - feat: enable listing caching with `--cache` at native Linux/XDG, macOS and Windows user cache paths; explicit cache directories remain supported
 
 - feat: reconcile listing caches through CloudKit change tokens by default, atomically applying asset-keyed changes and tokens; rebuild on expiry/ambiguous membership and reject mixed initial scans

@@ -27,13 +27,13 @@ from pyicloud_ipd.version_size import AssetVersionSize, LivePhotoVersionSize
 
 def cache_configuration_error(config: UserConfig) -> str | None:
     if config.cache_refresh != "auto" and not config.listing_cache_directory:
-        return "--cache-refresh requires --listing-cache-directory"
+        return "--cache-refresh requires --cache or --cache-directory"
     if config.refresh_listing_cache and config.cache_refresh == "reuse":
         return "--refresh cannot be combined with --cache-refresh reuse"
     if config.listing_cache_max_age < 0:
         return "Listing cache max age must be nonnegative"
     if config.refresh_listing_cache and not config.listing_cache_directory:
-        return "--refresh-listing-cache requires --listing-cache-directory"
+        return "--refresh requires --cache or --cache-directory"
     if config.listing_cache_directory and (
         config.auto_delete
         or config.delete_after_download
@@ -97,13 +97,13 @@ def add_options_for_user(parser: argparse.ArgumentParser) -> argparse.ArgumentPa
         "--refresh-listing-cache",
         "--refresh",
         action="store_true",
-        help="Force a complete metadata rebuild; does not force media re-downloads.",
+        help="Force a complete metadata rebuild; enables the native cache if no directory is supplied. Does not force media re-downloads.",
     )
     cloned.add_argument(
         "--cache-refresh",
         choices=["auto", "full", "reuse"],
         default="auto",
-        help="Metadata refresh policy: auto applies change tokens (default), full rebuilds, reuse explicitly skips change checks for a matching unexpired cache.",
+        help="Metadata refresh policy: auto applies change tokens (default), full rebuilds, reuse explicitly skips change checks for a matching unexpired cache. Full/reuse enable the native cache if no directory is supplied.",
     )
     cloned.add_argument(
         "--size",
@@ -510,7 +510,7 @@ def map_to_config(user_ns: argparse.Namespace) -> UserConfig:
             user_ns.listing_cache_directory
             if user_ns.listing_cache_directory is not None
             else default_listing_cache_directory()
-            if user_ns.cache
+            if user_ns.cache or user_ns.refresh_listing_cache or user_ns.cache_refresh != "auto"
             else None
         ),
         listing_cache_max_age=user_ns.listing_cache_max_age,

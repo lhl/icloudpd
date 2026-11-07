@@ -88,6 +88,33 @@ def test_cache_cli_opt_in_and_explicit_override():
             assert configs[0].listing_cache_directory == "custom"
 
 
+@pytest.mark.parametrize(
+    "options",
+    [
+        ["--refresh"],
+        ["--refresh-listing-cache"],
+        ["--cache-refresh", "full"],
+        ["--cache-refresh", "reuse"],
+    ],
+)
+def test_refresh_options_enable_native_cache(options):
+    with patch("icloudpd.cli.default_listing_cache_directory", return_value="native-cache"):
+        _, configs = parse(["--username", "test", *options])
+        assert configs[0].listing_cache_directory == "native-cache"
+        assert cache_configuration_error(configs[0]) is None
+        _, configs = parse(["--username", "test", *options, "--cache-directory", "custom"])
+        assert configs[0].listing_cache_directory == "custom"
+
+
+def test_implicit_refresh_cache_preserves_safety_guards():
+    _, configs = parse(["--username", "test", "--refresh", "--auto-delete"])
+    assert "deletion" in cache_configuration_error(configs[0])
+    _, configs = parse(["--username", "test", "--refresh", "--cache-refresh", "reuse"])
+    assert "cannot be combined" in cache_configuration_error(configs[0])
+    _, configs = parse(["--username", "test", "--cache-refresh", "auto"])
+    assert configs[0].listing_cache_directory is None
+
+
 def test_cache_cli_multiple_user_defaults_and_override():
     with patch("icloudpd.cli.default_listing_cache_directory", return_value="native-cache"):
         _, configs = parse(
