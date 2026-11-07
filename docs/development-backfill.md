@@ -8,7 +8,8 @@ feature can be reviewed against its dependency:
 | Branch | Review base | Change |
 | --- | --- | --- |
 | `feature/listing-cache` | `master` | Complete, private metadata snapshots and lazy resource lookups |
-| `feature/cache-date-seek` | `feature/listing-cache` | Direct date-range selection and selected progress totals |
+| `feature/cache-change-sync` | `feature/listing-cache` | Transactional change-token reconciliation and refresh controls |
+| `feature/cache-date-seek` | `feature/cache-change-sync` | Direct date-range selection and selected progress totals |
 | `feature/cached-date-order` | `feature/cache-date-seek` | Stable ascending/descending creation-date traversal |
 | `dev` | Integration branch | All three features and development notes |
 
@@ -37,9 +38,10 @@ Do not switch branches while a download process is running.
 
 Confirm `/run/media/lhl/Extreme SSD` is mounted before starting. Keep the same
 filenames, timezone, requested sizes, and destination as the original download.
-The full-library metadata cache has **not** been populated by the bounded live
-tests. First use will enumerate the whole library before downloading anything;
-a later run can reuse the finished cache and select the cutoff directly.
+The latest cache schema requires a one-time full listing, even if an older
+snapshot already exists. The bounded live tests did not rebuild the user's
+full-library cache. Later runs reconcile through change tokens and select the
+cutoff directly.
 
 ```sh
 env TZ=UTC /home/lhl/.local/bin/icloudpd-dev \
@@ -53,8 +55,8 @@ env TZ=UTC /home/lhl/.local/bin/icloudpd-dev \
   --live-photo-size original \
   --live-photo-mov-filename-policy original \
   --log-level info \
-  --listing-cache-directory "$HOME/.cache/icloudpd-listings" \
-  --listing-cache-max-age 604800 \
+  --cache-directory "$HOME/.cache/icloudpd-listings" \
+  --cache-refresh auto \
   --skip-created-after '2020-01-13' \
   --date-order descending \
   --directory '/run/media/lhl/Extreme SSD/icloud'
@@ -66,12 +68,13 @@ policy. Ascending order is also available by changing `--date-order` to
 `ascending`; it starts at the oldest selected asset rather than near the last
 downloaded date. Omit the date cutoff on later full-library reconciliation runs.
 
-The example deliberately allows reuse for seven days during a static backfill.
-**Count checks cannot detect same-count library changes.** New metadata/date/
-membership changes can remain stale until expiry or `--refresh-listing-cache`.
-Refresh after changing the remote library or for a final full reconciliation.
-The cache is not authoritative evidence of complete synchronization. Cache mode
-rejects all deletion/pruning flags. See [snapshot semantics](listing-cache.md).
+Default auto refresh applies changes on every run, including old-date imports,
+edits and asset removals from active metadata. `--refresh` forces a complete
+metadata rebuild; `--cache-refresh reuse` explicitly skips delta checks for a
+static backfill and warns about stale data. `--listing-cache-max-age` bounds the
+age before full reconciliation (seven days by default), not the interval between
+change checks. Downloaded files are retained even when an asset leaves iCloud.
+Cache mode rejects deletion/pruning flags. See [cache semantics](listing-cache.md).
 
 No automatic restart or network retry loop was added: the connection failure
 that stopped the old download can still occur. A completed snapshot makes
@@ -94,3 +97,9 @@ two-asset album snapshot, verified chronological order/reuse, and downloaded one
 is private under `~/.local/state/iphone-backup/icloudpd-dev-live-6zsi80y_/`, not
 in the media archive or Git. This is bounded validation, not a whole-library
 cache build or completeness audit.
+
+Incremental-refresh live validation built a separate two-asset token snapshot
+and refreshed it through `changes/zone` with photo pagination forbidden. Results
+remain private under `~/.local/state/iphone-backup/icloudpd-token-live-4czj6bwy/`.
+Live edits/deletions were not introduced for testing; those cases use deterministic
+mocked change-feed regressions.
