@@ -30,6 +30,10 @@ def cache_configuration_error(config: UserConfig) -> str | None:
             return "--date-order requires --listing-cache-directory"
         if config.recent is not None or config.until_found is not None:
             return "--date-order cannot be combined with --recent or --until-found"
+    if config.cache_refresh != "auto" and not config.listing_cache_directory:
+        return "--cache-refresh requires --listing-cache-directory"
+    if config.refresh_listing_cache and config.cache_refresh == "reuse":
+        return "--refresh cannot be combined with --cache-refresh reuse"
     if config.listing_cache_max_age < 0:
         return "Listing cache max age must be nonnegative"
     if config.refresh_listing_cache and not config.listing_cache_directory:
@@ -84,19 +88,27 @@ def add_options_for_user(parser: argparse.ArgumentParser) -> argparse.ArgumentPa
     )
     cloned.add_argument(
         "--listing-cache-directory",
+        "--cache-directory",
         default=None,
         help="Opt-in private metadata snapshot directory; first use lists the full album. Not a media cache.",
     )
     cloned.add_argument(
         "--listing-cache-max-age",
         type=int,
-        default=86400,
-        help="Reuse listing snapshots for this many seconds when asset count matches (default: 86400). Same-count edits require refresh.",
+        default=604800,
+        help="Force full cache reconciliation after this many seconds (default: 604800). Auto mode checks change tokens on every run.",
     )
     cloned.add_argument(
         "--refresh-listing-cache",
+        "--refresh",
         action="store_true",
-        help="Rebuild metadata snapshots instead of reusing them.",
+        help="Force a complete metadata rebuild; does not force media re-downloads.",
+    )
+    cloned.add_argument(
+        "--cache-refresh",
+        choices=["auto", "full", "reuse"],
+        default="auto",
+        help="Metadata refresh policy: auto applies change tokens (default), full rebuilds, reuse explicitly skips change checks for a matching unexpired cache.",
     )
     cloned.add_argument(
         "--size",
@@ -499,6 +511,7 @@ def map_to_config(user_ns: argparse.Namespace) -> UserConfig:
         adp_web_access=user_ns.adp_web_access,
         cookie_directory=user_ns.cookie_directory,
         date_order=user_ns.date_order,
+        cache_refresh=user_ns.cache_refresh,
         listing_cache_directory=user_ns.listing_cache_directory,
         listing_cache_max_age=user_ns.listing_cache_max_age,
         refresh_listing_cache=user_ns.refresh_listing_cache,

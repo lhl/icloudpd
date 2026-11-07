@@ -64,7 +64,12 @@ class IncompleteListingTestCase(TestCase):
     def test_date_filtered_cache_cli_does_not_report_incomplete_listing(self) -> None:
         import tempfile
 
-        with tempfile.TemporaryDirectory() as cache:
+        with (
+            tempfile.TemporaryDirectory() as cache,
+            mock.patch("icloudpd.listing_cache.anchor_token", return_value="test-token"),
+            mock.patch("icloudpd.listing_changes.changes", return_value=iter([([], "test-next")])),
+            mock.patch.object(PhotoAlbum, "__len__", return_value=1),
+        ):
             exit_code, output = self.run_shared_library(
                 inspect.stack()[0][3],
                 [

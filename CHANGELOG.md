@@ -6,6 +6,9 @@
 
 - feat: seek directly to inclusive creation-date ranges in listing snapshots and report selected-row progress totals
 
+- feat: reconcile listing caches through CloudKit change tokens by default, atomically applying asset-keyed changes and tokens; rebuild on expiry/ambiguous membership and reject mixed initial scans
+- feat: add `--cache-directory`, `--cache-refresh auto|full|reuse`, and `--refresh`; retain existing cache flag spellings
+
 - feat: opt-in complete metadata snapshots with `--listing-cache-directory`, bounded age, explicit refresh and lazy resource URL lookup; cached snapshots cannot drive deletion/pruning
 
 ## 1.33.0 (2026-11-03)
