@@ -1,15 +1,37 @@
 # Listing metadata cache
 
-`--cache-directory DIRECTORY` (alias `--listing-cache-directory`) opts into a
-private SQLite metadata cache for each account/domain/library/album query.
+`--cache` enables a private SQLite metadata cache in the native user cache
+location. `--cache-directory DIRECTORY` (alias `--listing-cache-directory`)
+enables caching at an explicit location instead. Metadata is scoped separately
+for each account/domain/library/album query. Caching remains disabled when
+neither option is supplied.
 The default refresh policy checks Apple's change token on **every run**, not
 just newer creation dates or matching asset counts. Imported old photos and
 same-count edits are therefore eligible for reconciliation.
 
 ```sh
 icloudpd --username you@example.com --directory /backup/photos \
-  --cache-directory ~/.cache/icloudpd-listings
+  --cache
 ```
+
+## Default locations
+
+| Platform | Listing cache directory |
+| --- | --- |
+| Linux and other Unix systems | `$XDG_CACHE_HOME/icloudpd/listings` if the variable is a nonempty absolute path; otherwise `~/.cache/icloudpd/listings` |
+| macOS | `~/Library/Caches/icloudpd/listings` |
+| Windows | `%LOCALAPPDATA%\\icloudpd\\Cache\\listings`; if unset, empty or not absolute, `~\\AppData\\Local\\icloudpd\\Cache\\listings` |
+
+macOS and Windows use their native locations rather than `XDG_CACHE_HOME`.
+Windows drive-absolute and network-share paths are supported. Relative environment
+paths are ignored. Explicit `--cache-directory` values take precedence over
+`--cache` regardless of argument order. Help/config parsing does not create
+these directories; the first cache operation does.
+
+Existing caches are not moved automatically from earlier example locations
+such as `~/.cache/icloudpd-listings`. Keep passing that path to reuse it, or use
+`--cache` to build at the new default. Cookie/authentication storage and media
+destinations are unchanged; this option controls listing metadata only.
 
 ## Refresh controls
 
@@ -22,7 +44,7 @@ icloudpd --username you@example.com --directory /backup/photos \
 | `--cache-refresh reuse` | Explicitly skip change checks, requiring matching count and an unexpired cache; warns about stale metadata. |
 | `--listing-cache-max-age SECONDS` | Force full reconciliation after this age (default 604800, seven days); 0 forces a full build every run. Auto still checks tokens before this age. |
 
-A refresh mode other than `auto` requires a cache directory. `--refresh` and
+A refresh mode other than `auto` requires `--cache` or a cache directory. `--refresh` and
 `reuse` cannot be combined. Authentication and count checks still contact Apple;
 `reuse` is not an offline mode. Do not choose `reuse` for correctness-preserving
 normal synchronization.

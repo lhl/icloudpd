@@ -13,6 +13,7 @@ import foundation
 from foundation.core import chain_from_iterable, compose, map_, partial_1_1, skip
 from foundation.string_utils import lower
 from icloudpd.base import ensure_tzinfo, offset_to_datetime, run_with_configs
+from icloudpd.cache_paths import default_listing_cache_directory
 from icloudpd.config import GlobalConfig, UserConfig
 from icloudpd.log_level import LogLevel
 from icloudpd.mfa_provider import MFAProvider
@@ -76,10 +77,15 @@ def add_options_for_user(parser: argparse.ArgumentParser) -> argparse.ArgumentPa
         default="~/.pyicloud",
     )
     cloned.add_argument(
+        "--cache",
+        action="store_true",
+        help="Enable listing cache in the native user cache directory (Linux XDG, macOS Caches, Windows LocalAppData). --cache-directory overrides the location.",
+    )
+    cloned.add_argument(
         "--listing-cache-directory",
         "--cache-directory",
         default=None,
-        help="Opt-in private metadata snapshot directory; first use lists the full album. Not a media cache.",
+        help="Enable listing caching at this explicit directory instead of the native --cache default. Not a media cache.",
     )
     cloned.add_argument(
         "--listing-cache-max-age",
@@ -500,7 +506,13 @@ def map_to_config(user_ns: argparse.Namespace) -> UserConfig:
         adp_web_access=user_ns.adp_web_access,
         cookie_directory=user_ns.cookie_directory,
         cache_refresh=user_ns.cache_refresh,
-        listing_cache_directory=user_ns.listing_cache_directory,
+        listing_cache_directory=(
+            user_ns.listing_cache_directory
+            if user_ns.listing_cache_directory is not None
+            else default_listing_cache_directory()
+            if user_ns.cache
+            else None
+        ),
         listing_cache_max_age=user_ns.listing_cache_max_age,
         refresh_listing_cache=user_ns.refresh_listing_cache,
         sizes=list(
