@@ -35,6 +35,18 @@ class Album:
         self.service_endpoint = "https://api.invalid"
         self.params = {"clientId": "test"}
         self.session = Mock()
+        self.session.post.return_value.json.return_value = {
+            "syncToken": "initial",
+            "zones": [
+                {"zoneID": self._zone_id, "syncToken": "next", "records": [], "moreComing": False}
+            ],
+        }
+
+    def _list_query_gen(self, *args):
+        return {"query": {"recordType": self.list_type}, "zoneID": self._zone_id}
+
+    def __len__(self):
+        return len(self.items)
 
     def __iter__(self):
         return iter(self.items)
@@ -52,8 +64,15 @@ def test_shared_master_asset_identity_and_private_cache(tmp_path):
     assert not snapshot.valid(3, 3600)
     assert not snapshot.valid(2, 0)
     album.items = []
+    # Explicit reuse is available for an unchanging backfill, not the default.
     assert (
-        len(list(prepare_snapshot(str(tmp_path), "user", "com", album, 2, 3600, False).photos()))
+        len(
+            list(
+                prepare_snapshot(
+                    str(tmp_path), "user", "com", album, 2, 3600, False, "reuse"
+                ).photos()
+            )
+        )
         == 2
     )
 
@@ -122,7 +141,7 @@ def test_cache_progress_and_forced_refresh(tmp_path, caplog):
     assert len(list(snapshot.photos())) == 1000
     album.items = []
     with pytest.raises(ValueError, match="Incomplete"):
-        prepare_snapshot(str(tmp_path), "user", "com", album, 1000, 3600, True)
+        snapshot.build(1000, track_changes=True)
     assert snapshot.valid(1000, 3600)
 
 
@@ -173,3 +192,17 @@ def test_cache_configuration_validation():
     assert cache_configuration_error(configs[0])
     configs[0].listing_cache_max_age = 0
     assert cache_configuration_error(configs[0]) is None
+
+
+def test_refresh_cli_aliases_modes_and_conflicts():
+    _, configs = parse(["--username", "test", "--cache-directory", "/tmp/cache", "--refresh"])
+    config = configs[0]
+    assert config.refresh_listing_cache and config.cache_refresh == "auto"
+    assert config.listing_cache_max_age == 604800
+    assert cache_configuration_error(config) is None
+    config.cache_refresh = "reuse"
+    assert cache_configuration_error(config)
+    config.refresh_listing_cache = False
+    assert cache_configuration_error(config) is None
+    config.listing_cache_directory = None
+    assert cache_configuration_error(config)
