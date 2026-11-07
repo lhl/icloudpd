@@ -34,8 +34,9 @@ class _DefaultConfig:
     prune_orphans: bool = False
     prune_orphans_adopt_existing: bool = False
     date_order: str = "library"
+    cache_refresh: str = "auto"
     listing_cache_directory: str | None = None
-    listing_cache_max_age: int = 86400
+    listing_cache_max_age: int = 604800
     refresh_listing_cache: bool = False
     folder_structure: str
     set_exif_datetime: bool
